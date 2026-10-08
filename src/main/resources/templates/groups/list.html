@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Study Group Finder</title>
+</head>
+<body>
+	<h1>Study Groups</h1>
+
+	<p><a th:href="@{/groups/new}">New Study Group</a></p>
+
+	<form method="GET" th:action="@{/groups}">
+		<label for="course">Search by course:</label>
+		<input type="text" id="course" name="course" th:value="${course}" placeholder="e.g. CSCI-P 466"/>
+		<button type="submit">Search</button>
+		<a th:href="@{/groups}">Clear</a>
+	</form>
+
+	<p th:if="${#lists.isEmpty(groups)}">No study groups yet.</p>
+
+	<table th:unless="${#lists.isEmpty(groups)}">
+		<thead>
+			<tr>
+				<th>Course</th>
+				<th>Instructor</th>
+				<th>Title</th>
+				<th>Description</th>
+				<th>Created By</th>
+				<th>Meeting Time</th>
+				<th>Location</th>
+				<th>Max Capacity</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:each="group : ${groups}">
+				<td th:text="${group.course}">Course</td>
+				<td th:text="${group.instructor}">Instructor</td>
+				<td th:text="${group.title}">Title</td>
+				<td th:text="${group.description}">Description</td>
+				<td th:text="${group.createdBy}">Creator</td>
+				<td th:text="${group.meetingTime}">Meeting Time</td>
+				<td th:text="${group.location}">Location</td>
+				<td th:text="${group.maxCapacity}">10</td>
+			</tr>
+		</tbody>
+	</table>
+</body>
+</html>
