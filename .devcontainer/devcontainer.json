@@ -1,0 +1,1 @@
+{"forwardPorts":[8080],"image":"mcr.microsoft.com/devcontainers/java:1-17-bookworm","name":"Study Group Finder Dev Container","postCreateCommand":"chmod +x ./mvnw && ./mvnw -q -ntp dependency:go-offline"}
