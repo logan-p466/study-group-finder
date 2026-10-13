@@ -1,0 +1,1 @@
+This directory is reserved for static assets used by Study Group Finder.
