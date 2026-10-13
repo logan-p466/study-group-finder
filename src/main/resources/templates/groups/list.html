@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>IU Study Group Finder</title>
+</head>
+<body>
+<h1>Study Groups</h1>
+<p><a th:href="@{/groups/new}">New Study Group</a></p>
+<!-- GET search form sends a course query parameter to the same /groups mapping -->
+<form method="GET" th:action="@{/groups}">
+  <label for="course">Search by course:</label>
+  <!-- th:value preserves current search text -->
+  <input type="text" id="course" name="course" th:value="${course}" />
+  <input type="submit" value="Search" />
+  <a th:href="@{/groups}">Cancel</a>
+</form>
+
+<!-- Selects between empty text and table -->
+<p th:if="${groups.empty}">No study groups yet!</p>
+
+<table th:unless="${groups.empty}" border="1">
+  <thead>
+  <tr>
+    <th>Title</th>
+    <th>Course</th>
+    <th>Instructor</th>
+    <th>Meeting Time</th>
+    <th>Location</th>
+    <th>Max Capacity</th>
+  </tr>
+  </thead>
+  <tbody>
+  <!-- replaces placeholder text w/ model values -->
+  <tr th:each="group : ${groups}">
+    <td th:text="${group.title}">Study Group Title</td>
+    <td th:text="${group.course}">CSCI-P 466</td>
+    <td th:text="${group.instructor}">Instructor Name</td>
+    <td th:text="${group.meetingTime}">Wednesday 8:00 PM</td>
+    <td th:text="${group.location}">Luddy Hall</td>
+    <td th:text="${group.maxCapacity}">10</td>
+  </tr>
+  </tbody>
+</table>
+</body>
+</html>
