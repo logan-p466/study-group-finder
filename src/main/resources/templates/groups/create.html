@@ -1,65 +1,49 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:th:="http://www.thymeleaf.org">
+>
 <head>
     <title>New Study Group</title>
-
 </head>
 <body>
 <h1>New Study Group</h1>
-
 <form method="POST" th:action="@{/groups}" th:object="${studyGroup}">
     <label for="course">Course:</label>
     <input type="text" th:field="*{course}"/>
     <span th:if="${#fields.hasErrors('course')}"
           th:errors="*{course}">Course Error</span>
     <br/>
-
     <label for="instructor">Instructor:</label>
     <input type="text" th:field="*{instructor}"/>
     <span th:if="${#fields.hasErrors('instructor')}"
-        th:errors="*{instructor}">Instructor Error</span>
+          th:errors="*{instructor}">Instructor Error</span>
     <br/>
-
     <label for="title">Title:</label>
     <input type="text" th:field="*{title}"/>
     <span th:if="${#fields.hasErrors('title')}"
-        th:errors="*{title}">Title Error</span>
+          th:errors="*{title}">Title Error</span>
     <br/>
-
     <label for="description">Description:</label>
     <input type="text" th:field="*{description}"/>
     <span th:if="${#fields.hasErrors('description')}"
-        th:errors="*{description}">Description Error</span>
+          th:errors="*{description}">Description Error</span>
     <br/>
-
-    <label for="createdBy">Created By:</label>
-    <input type="text" th:field="*{createdBy}"/>
-    <span th:if="${#fields.hasErrors('createdBy')}"
-        th:errors="*{createdBy}">Created By Error</span>
-    <br/>
-
     <label for="maxCapacity">Maximum Capacity:</label>
     <input type="number" min="2" max="100" th:field="*{maxCapacity}"/>
     <span th:if="${#fields.hasErrors('maxCapacity')}"
           th:errors="*{maxCapacity}">Maximum Capacity Error</span>
     <br/>
-
     <label for="meetingTime">Meeting Time:</label>
     <input type="text" th:field="*{meetingTime}"/>
     <span th:if="${#fields.hasErrors('meetingTime')}"
           th:errors="*{meetingTime}">Meeting Time Error</span>
     <br/>
-
     <label for="location">Location</label>
     <input type="text" th:field="*{location}"/>
     <span th:if="${#fields.hasErrors('location')}"
           th:errors="*{location}">Location Error</span>
     <br/>
-
     <input type="submit" value="Create Study Group!"/>
 </form>
-
 <p><a th:href="@{/groups}">Back to Study Groups</a></p>
 </body>
 </html>

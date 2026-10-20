@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Register - Study Group Finder</title>
+</head>
+<body>
+<h1>Create Student Account</h1>
+<form method="POST" th:action="@{/register}" th:object="${registrationForm}">
+  <label for="username">Username:</label>
+  <input type="text" th:field="*{username}"/>
+  <span th:if="${#fields.hasErrors('username')}"
+        th:errors="*{username}">Username Error</span>
+  <br/>
+  <label for="password">Password:</label>
+  <input type="password" th:field="*{password}"/>
+  <span th:if="${#fields.hasErrors('password')}"
+        th:errors="*{password}">Password Error</span>
+  <br/>
+  <label for="confirmPassword">Confirm Password:</label>
+  <input type="password" th:field="*{confirmPassword}"/>
+  <span th:if="${#fields.hasErrors('confirmPassword')}"
+        th:errors="*{confirmPassword}">Confirmation Error</span>
+  <br/>
+  <input type="submit" value="Register"/>
+</form>
+<p><a th:href="@{/login}">Already have an account? Sign in</a></p>
+<p><a th:href="@{/groups}">Back to Study Groups</a></p>
+</body>
+</html>
