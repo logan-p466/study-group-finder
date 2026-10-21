@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 
 ### Local H2 database files ###
-data/
+/data/
 
 ### STS ###
 .apt_generated
