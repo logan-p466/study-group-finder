@@ -40,7 +40,7 @@ public class StudyGroup {
     // optional
     private String description;
 
-    @NotBlank(message = "Created by is required")
+//    @NotBlank(message = "Created by is required") not used anymore due to login
     private String createdBy;
 
     // might change later specific of capacity based on further meetings

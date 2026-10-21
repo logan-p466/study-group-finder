@@ -1,11 +1,7 @@
 # Study Group Finder
 
-Study Group Finder is the Sprint 1 vertical slice for CSCI-P 466 Project I. A visitor can browse saved study groups, search by exact course text, and open a form to create a new group. A valid group is saved through Spring Data JPA to a file-based H2 database and appears in the list; an invalid form is shown again with validation errors and saves nothing.
+Study Group Finder is the CSCI-P 466 Project I application. Sprint 1 added public group browsing, course search, and group creation with Spring Data JPA and H2. Sprint 2 extends that code with student registration, sign-in, group joining, membership counts, and capacity checks. Group creation now requires sign-in. Invalid forms display field-specific validation errors.
 
-## Team
-
-- Logan Reddell
-- 
 ## Technology
 
 - Java 17
@@ -16,6 +12,7 @@ Study Group Finder is the Sprint 1 vertical slice for CSCI-P 466 Project I. A vi
 - Bean Validation
 - Spring Data JPA
 - H2 Database
+- BCryptPasswordEncoder from spring-security-crypto (without Spring Security web authentication)
 
 ## Build
 
@@ -45,16 +42,21 @@ http://localhost:8080/
 
 The root URL redirects to `/groups`.
 
-## Grader workflow
+## Browser workflow
 
-1. Start the application and open `http://localhost:8080/`.
-2. Confirm the empty-state message appears when no groups exist.
-3. Click `New Study Group`.
-4. Create a valid group and confirm the browser redirects to `/groups` and displays it.
-5. Search using the exact course text and confirm groups for other courses are not displayed.
-6. Submit another form with a blank title and confirm an error appears and nothing is saved.
-7. Stop and restart the application; the previously saved group should still appear.
-8. Run `./mvnw test` and confirm all seven tests pass.
+1. Start the application and browse `/groups` without signing in.
+2. Search by course to confirm the Sprint 1 browsing and filtering remain.
+3. Open `/register`. Submit invalid fields and check validation messages appear beside them.
+4. Register a valid account and sign in at `/login`.
+5. Create a valid study group and confirm its creator is the signed-in account.
+6. Submit a blank title on the create form and check the Sprint 1 field validation.
+7. Join a group, try joining it again, then fill it to capacity using other accounts.
+8. Stop and restart the application to check persisted records.
+9. Run `./mvnw clean test` to check the MVC and integration tests.
+
+## Development notes
+
+See `docs/sprint2-consistency.md` for the comparison with Sprint 1 and Practicums 1-5. Follow your course policy on AI-assisted code; review and adapt reference changes yourself before submitting them.
 
 ## Database setup
 

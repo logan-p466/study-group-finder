@@ -6,6 +6,13 @@
 </head>
 <body>
 <h1>Study Groups</h1>
+<p th:if="${signedIn}">Signed in as <span th:text="${username}">student</span></p>
+<form th:if="${signedIn}" method="post" th:action="@{/logout}">
+  <button type="submit">Sign Out</button>
+</form>
+<p th:unless="${signedIn}"><a th:href="@{/login}">Sign In</a> | <a th:href="@{/register}">Register</a></p>
+<p th:if="${message}" th:text="${message}"></p>
+<p th:if="${param.loggedOut}">You signed out.</p>
 <p><a th:href="@{/groups/new}">New Study Group</a></p>
 <!-- GET search form sends a course query parameter to the same /groups mapping -->
 <form method="GET" th:action="@{/groups}">
@@ -15,10 +22,8 @@
   <input type="submit" value="Search" />
   <a th:href="@{/groups}">Cancel</a>
 </form>
-
 <!-- Selects between empty text and table -->
 <p th:if="${groups.empty}">No study groups yet!</p>
-
 <table th:unless="${groups.empty}" border="1">
   <thead>
   <tr>
@@ -27,7 +32,8 @@
     <th>Instructor</th>
     <th>Meeting Time</th>
     <th>Location</th>
-    <th>Max Capacity</th>
+    <th>Members / Max Capacity</th>
+    <th>Join</th>
   </tr>
   </thead>
   <tbody>
@@ -38,7 +44,16 @@
     <td th:text="${group.instructor}">Instructor Name</td>
     <td th:text="${group.meetingTime}">Wednesday 8:00 PM</td>
     <td th:text="${group.location}">Luddy Hall</td>
-    <td th:text="${group.maxCapacity}">10</td>
+    <td><span th:text="${memberCounts[group.id]}">0</span>/<span th:text="${group.maxCapacity}">10</span></td>
+    <td>
+      <span th:if="${joinedIds.contains(group.id)}">Joined</span>
+      <span th:if="${!joinedIds.contains(group.id) and fullIds.contains(group.id)}">Full</span>
+      <form th:if="${signedIn and !joinedIds.contains(group.id) and !fullIds.contains(group.id)}"
+            method="post" th:action="@{/groups/{id}/join(id=${group.id})}">
+        <button type="submit">Join</button>
+      </form>
+      <a th:if="${!signedIn and !fullIds.contains(group.id)}" th:href="@{/login}">Sign in to join</a>
+    </td>
   </tr>
   </tbody>
 </table>

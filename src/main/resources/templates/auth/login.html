@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Sign In - Study Group Finder</title>
+</head>
+<body>
+<h1>Student Sign In</h1>
+<p th:if="${param.registered}">Registration complete. Please sign in.</p>
+
+<form method="POST" th:action="@{/login}" th:object="${loginForm}">
+    <label for="username">Username:</label>
+    <input type="text" th:field="*{username}"/>
+    <span th:if="${#fields.hasErrors('username')}"
+          th:errors="*{username}">Username Error</span>
+    <br/>
+
+    <label for="password">Password:</label>
+    <input type="password" th:field="*{password}"/>
+    <span th:if="${#fields.hasErrors('password')}"
+          th:errors="*{password}">Password Error</span>
+    <br/>
+
+    <input type="submit" value="Sign In"/>
+</form>
+
+<p><a th:href="@{/register}">Create an account</a></p>
+<p><a th:href="@{/groups}">Back to Study Groups</a></p>
+</body>
+</html>
