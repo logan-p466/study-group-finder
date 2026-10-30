@@ -5,7 +5,7 @@
   <title>IU Study Group Finder</title>
 </head>
 <body>
-<h1>Study Groups</h1>
+<h1>IU Study Group Finder</h1>
 <p th:if="${signedIn}">Signed in as <span th:text="${username}">student</span></p>
 <form th:if="${signedIn}" method="post" th:action="@{/logout}">
   <button type="submit">Sign Out</button>
