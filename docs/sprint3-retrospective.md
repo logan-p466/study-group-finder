@@ -1,8 +1,8 @@
 # Sprint 3 Review and Retrospective — Study Group Finder
 
 **CSCI-P 466 · Group 2 · Project 1**
-**Jira sprint:** SGF Sprint 3, scheduled October 21–27, 2026. Verification and live delivery continued on October 29, 2026; the scheduled sprint end is **not** the actual deployment date.
-**Review clarification:** Professor Bahramian, October 22, 2026.
+**Jira sprint:** SGF Sprint 3, scheduled October 21–27, 2026; closed October 30, 2026 at 2:50 AM EDT. Verification and release continued October 29–30, after the scheduled sprint end.
+**Sprint 2 review:** October 20, 2026. **Scope clarification:** Professor Bahramian, October 22, 2026.
 **Repository:** https://github.com/logan-p466/study-group-finder
 **Live application:** https://sgf-p466-group2-web.onrender.com/groups
 
@@ -18,11 +18,11 @@ Deliver Release 1.0 with a production PostgreSQL database, Docker image, automat
 | [SGF-31](https://loganreddell.atlassian.net/browse/SGF-31): Docker | 3 | Multi-stage Java 17 Dockerfile; local image built/smoke-tested; GitHub CI Docker job passed |
 | [SGF-32](https://loganreddell.atlassian.net/browse/SGF-32): CI and checks | 3 | `build-test` and dependent `docker-build` jobs; branch rules; failed-then-fixed real CI runs recorded |
 | [SGF-33](https://loganreddell.atlassian.net/browse/SGF-33): Render CI/CD | 5 | Initial Blueprint service Live; later merge `1e3cf11` marked Auto-Deploy, 2m44s, with visible updated heading |
-| [SGF-34](https://loganreddell.atlassian.net/browse/SGF-34): regression, docs, release | 2 | 32 green CI tests and release documentation; **historical tags and GitHub `v1.0` Release still to be created at this document's preparation** |
+| [SGF-34](https://loganreddell.atlassian.net/browse/SGF-34): regression, docs, release | 2 | 32 green CI tests; documentation PR #5 merged as `54783d1`; annotated sprint tags and [published v1.0 release](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) verified |
 | [SGF-37](https://loganreddell.atlassian.net/browse/SGF-37): admin suspension | 5 | Live administrator dashboard, suspension status retained, public group hidden, normal user denied with 403; automated security tests passed |
 | [SGF-35](https://loganreddell.atlassian.net/browse/SGF-35): creator editing | deferred | Removed from Sprint 3 scope after professor review; not implemented or claimed done |
 
-**Total estimated scope: 21 points.** The feature/infrastructure work accounting for **19 points** has verified implementation evidence. The **remaining 2-point documentation/release item** was not fully done until historical tags and `v1.0` release are published. This is not an assertion that Jira has already transitioned those issues: when checked, SGF-30 was still `In Progress`, the others still `To Do`, and SGF-35 deferred outside Sprint 3. Jira status transitions and closure should follow final verification.
+**Completed scope: 21/21 estimated points.** All six committed Jira issues are Done. Sprint 3 (ID 37) closed on October 30, 2026 at 06:50:28 UTC (2:50:28 AM EDT). SGF-35 remained outside Sprint 3 with its explicit deferral. Sprint 1 completed 17 estimated story points and Sprint 2 completed 16. The larger final increment overran its scheduled October 27 end; release integration needed more time than estimated.
 
 ## 3. Final Release 1.0 demonstrated behavior
 
@@ -84,18 +84,18 @@ The direct POST to join a suspended group is covered by `AdminSecurityIntegratio
 
 For the next project: set up CI and an early Docker build in Sprint 1; verify Postgres and H2 environment isolation; establish documented role/session testing before production; add actual migrations and concurrency protection before supporting high-volume joining; maintain a release evidence checklist alongside the sprint board.
 
-## 9. Final evidence / outstanding bookkeeping
+## 9. Final evidence and grading handoff
 
-- [x] 32 tests green in GitHub CI, Docker build job passed.
+- [x] 32 tests green in GitHub CI; Docker build job passed.
 - [x] Deliberate failing build and successful correction documented with permanent links.
-- [x] Production Docker web service and PostgreSQL available; health and groups URL usable.
+- [x] Production Docker web service and PostgreSQL deployed; health and group listing demonstrated.
 - [x] Production admin access, suspension, hidden group and non-admin 403 verified by supplied screenshots.
-- [x] Persistence after Render web-service restart verified by user.
-- [x] Actual `main` merge triggered an automatic Render deployment.
-- [x] Domain, architectural, design and sprint documentation updated to match actual code.
-- [ ] Create/verify historical Git tags `sprint1`, `sprint2`, `sprint3` and publish `v1.0` GitHub Release. None existed when checked.
-- [ ] Finalize any temporary grader credentials and give the instructor an appropriate access method without exposing private database credentials.
-- [ ] Reconcile Jira issue statuses and Sprint 3 closure with the completed work/release.
-- [ ] Fill and submit Assignment 4's official PDF, citing recorded URLs and screenshots.
+- [x] Persistence after Render web-service restart verified by the user.
+- [x] A `main` merge triggered an automatic Render deployment.
+- [x] Domain, architecture, design and sprint documentation matches the released implementation.
+- [x] Annotated Git tags `sprint1`, `sprint2`, `sprint3`, and `v1.0` verified; [GitHub Release v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) published October 30, 2026 at 2:41 AM EDT.
+- [x] SGF-30 through SGF-34 and SGF-37 are Done; SGF-36 moderation epic is Done; Sprint 3 closed at 21/21 points.
+- [ ] Supply the existing disposable `demo-admin` password to the grader. The password is not recorded in the release evidence, and its delivery has not been verified.
+- [ ] Submit the completed official Assignment 4 worksheet and Jira, GitHub, and live-application links on Canvas; keep the service and database available through grading.
 
-**Release 1.0 documentation is the intended content of these files; a published GitHub `v1.0` Release is still a separate action.**
+The previously suspended `Sprint 3 Admin Test` record demonstrates retained state. A grader repeating moderation should create a new disposable group because v1.0 has no unsuspend action.
