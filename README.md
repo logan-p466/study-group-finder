@@ -1,133 +1,151 @@
-# Study Group Finder
+# IU Study Group Finder
 
-**CSCI-P 466, Project 1, Group 2**
+**CSCI-P 466 — Software Engineering for Information Systems II · Project 1 · Group 2**
 **Repository:** https://github.com/logan-p466/study-group-finder
 **Jira:** https://loganreddell.atlassian.net/jira/software/projects/SGF/boards/2/backlog
-**Live application:** [INSERT ACTUAL RENDER WEB URL]/groups
+**Live application:** https://sgf-p466-group2-web.onrender.com/groups
+**Health check:** https://sgf-p466-group2-web.onrender.com/actuator/health
+**Administrator dashboard:** https://sgf-p466-group2-web.onrender.com/admin/groups
 
-Study Group Finder is a Java 17, Spring Boot 3.5.5 web application using Spring MVC, Thymeleaf, Spring Data JPA/Hibernate, Bean Validation, Spring Security, and PostgreSQL. It provides a public study-group directory and registration-based group participation, plus administrator moderation.
+Study Group Finder is a server-rendered Java 17 / Spring Boot 3.5.5 application for organizing course study groups. It uses Spring MVC, Thymeleaf, Spring Data **JPA** with Hibernate, Bean Validation, Spring Security, H2 for local development/tests, and managed PostgreSQL on Render. The production application runs in a Docker container and is deployed automatically after passing GitHub Actions checks.
 
-## Release 1.0 features
+## Delivered functionality (Release 1.0 scope)
 
-- Visitors can browse study groups and filter by exact course text.
-- Students can register, sign in, create groups, and join groups with available capacity.
-- Registration uses BCrypt password hashes; student roles default to `STUDENT`.
-- Joining enforces unique memberships and group capacity on the server. Group creation checks form validation and uses the authenticated username instead of trusting a submitted creator field.
-- Spring Security handles form login, logout, session authentication, role-based access, and CSRF protection on state-changing requests.
-- Administrators can view all groups at `/admin/groups` and suspend a group. Suspended groups remain in PostgreSQL, are excluded from public browse/search results, and reject joining requests. Registration cannot assign administrator privileges.
-- The production application runs in Docker on Render with a managed PostgreSQL database, `/actuator/health` monitoring, and GitHub Actions checks gating automatic deployments.
+- **Visitors:** browse active groups and search by **exact course text**, without creating an account.
+- **Students:** register, sign in/out, create a study group, see current membership/capacity, and join when space is available. A student cannot join the same group twice.
+- **Group creation:** requires course, instructor, title, and capacity from 2 to 100; description, meeting time, and location are optional. The server assigns `createdBy` to the authenticated username instead of trusting form input.
+- **Identity and security:** registration saves BCrypt password hashes and assigns `STUDENT`. Spring Security uses a repository-backed `UserDetailsService`, form authentication, sessions, role checks, and CSRF for POST forms.
+- **Administrator:** a separately provisioned `ADMIN` user can open `/admin/groups`, view active and suspended groups, and suspend groups without deleting them. Suspended groups disappear from public browsing/search and reject new memberships server-side. Normal students receive HTTP 403 when accessing administrator functionality.
+- **Persistence:** JPA entities map to PostgreSQL in production. User accounts, memberships, and group status survived a Render web-service restart in the production demonstration.
 
-Features for later releases, including recurring schedules, calendar exports, creator-only editing, and extended course-catalog options, are **not** part of v1.0.
+The site is intentionally a small server-rendered course project. Creator-only editing, calendar export, recurring meetings, advanced search, and other later-release ideas are **not** delivered in v1.0.
 
-## Demo and grading instructions
+### Actual persistence model
 
-**Live group list:** [INSERT ACTUAL RENDER WEB URL]/groups
-**Administrator page:** [INSERT ACTUAL RENDER WEB URL]/admin/groups
-
-1. Browse the public groups without signing in, then search for a course.
-2. Sign in with the student demo account. Create a group, join another group, and verify membership and capacity behavior.
-3. Sign out and sign in with the administrator demo account. Open `/admin/groups` and suspend a sample group.
-4. Verify the suspended group is absent from public search and that a regular student cannot access `/admin/groups` or join the suspended group.
-5. Check `/actuator/health` and confirm that data survives an application restart or redeploy.
-
-| Demo account | Username | Password |
+| Java entity | Database table | Important properties |
 |---|---|---|
-| Student | [INSERT DISPOSABLE DEMO STUDENT USERNAME] | [INSERT DEMO-ONLY PASSWORD] |
-| Administrator | [INSERT DISPOSABLE DEMO ADMIN USERNAME] | [INSERT DEMO-ONLY PASSWORD] |
+| `Student` | `student_account` | `id: Long`, unique `username: String`, `passwordHash: String`, `role: String` (`STUDENT`/`ADMIN`) |
+| `StudyGroup` | `study_group` | `id: long`, `course`, `instructor`, `title`, `description`, **`createdBy: String`**, `status: String`, `maxCapacity: int`, `meetingTime`, `location` |
+| `Membership` | `group_membership` | `id: Long`, JPA `@ManyToOne` to `Student` and `StudyGroup`, unique `(student_id, study_group_id)` |
 
-These must be **temporary accounts specifically intended for course grading**. Never publish personal, database, or permanent administrator credentials. Ensure the administrator role is provisioned directly in the database, never through public registration. Reset or disable demo credentials after grading.
+**Important:** `createdBy` is **still a String field in the released Java entity**. It now contains the authenticated creator's username assigned by the server; it is **not** a foreign key or `@ManyToOne Student` relationship. The *membership* links are true JPA relationships. See [`docs/domain-model.md`](docs/domain-model.md).
 
-## Run locally without Docker (H2)
+## Demo and grading
 
-Requirements: Java 17, Maven wrapper, and a terminal in the project root. The default profile uses file-based H2 under `./data/`.
+Use the public group list without logging in. Register a student, sign in, create a group, and join a group. To demonstrate moderation, sign in as `demo-admin`, open `/admin/groups`, suspend a **disposable** group, and verify that it disappears from `/groups`. Check that a normal student's request for `/admin/groups` is refused with HTTP 403. The production admin test group `Sprint 3 Admin Test` was suspended for the course demonstration.
+
+**Demo credentials for the instructor:** `demo-admin` is a production administrator username. **Before grading, provide a temporary demo-only password directly to the instructor, or fill in a disposable grading credential here only if sharing that password in a public repository is acceptable.** No application password or PostgreSQL secret is included in this repository. A separate grading student account can be created with public registration.
+
+| Account | Username | Password/availability |
+|---|---|---|
+| Administrator | `demo-admin` | **Action required:** share disposable demo credential with instructor |
+| Student | Register a new non-admin user | Set password during registration; or provide a disposable pre-created grading account |
+
+Administrators are provisioned **after registration** through an explicit database update to the role column; public registration never offers ADMIN. Production and local PostgreSQL databases are separate.
+
+## Run locally (no Docker; H2)
+
+Requires **Java 17** and the Maven wrapper, from the repository root:
 
 ```bash
 env -u SPRING_DATASOURCE_URL \
     -u SPRING_DATASOURCE_USERNAME \
     -u SPRING_DATASOURCE_PASSWORD \
-    ./mvnw spring-boot:run
+    bash ./mvnw spring-boot:run
 ```
 
-Open http://localhost:8080/groups.
+Open `http://localhost:8080/groups`. By default, data is in file-backed H2 under `./data/studygroupfinder` (not PostgreSQL). Remove exported production datasource variables when running H2. The `data/` directory is not source code and must not be committed.
 
-## Run tests
-
-The automated tests use an isolated in-memory H2 database, not the production database. With PostgreSQL credentials removed from the environment:
+### Run all automated tests
 
 ```bash
 env -u SPRING_DATASOURCE_URL \
     -u SPRING_DATASOURCE_USERNAME \
     -u SPRING_DATASOURCE_PASSWORD \
-    ./mvnw clean verify
+    bash ./mvnw clean verify
 ```
 
-**Final test evidence:** [INSERT ACTUAL NUMBER PASSED AND LINK TO GREEN CI RUN]. The test suite covers MVC forms, registration, authentication, role restrictions, joining, duplicate memberships, capacity, suspension, and earlier sprint regression paths.
+Tests use a separate **in-memory H2** datasource configured in `src/test/resources/application.properties`, with schema recreation on each Spring context. GitHub Actions PR #4 CI verified **32 tests, 0 failures, 0 errors, 0 skipped**: [run 40996253828](https://github.com/logan-p466/study-group-finder/actions/runs/40996253828). The tests cover repository persistence, validation, registration/password hashes, login and authorization, group creation, membership capacity/duplicates, and administrator suspension/browse restrictions.
 
-## Run using local PostgreSQL
+### Run locally against Windows PostgreSQL
 
-Create the `sgf` database in a local PostgreSQL server and set the following environment variables in the IntelliJ Dev Container terminal:
+First create database `sgf` in local PostgreSQL. From the IntelliJ Linux Dev Container, where `host.docker.internal` resolves to Windows:
 
 ```bash
 export SPRING_DATASOURCE_URL='jdbc:postgresql://host.docker.internal:5432/sgf'
 export SPRING_DATASOURCE_USERNAME='postgres'
-read -rs -p 'PostgreSQL password: ' SPRING_DATASOURCE_PASSWORD
+read -rs -p 'Local PostgreSQL password: ' SPRING_DATASOURCE_PASSWORD
 echo
 export SPRING_DATASOURCE_PASSWORD
-./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+bash ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
-`host.docker.internal` refers to the **local Windows host as seen from the Dev Container**; it is not the production database address. Do not commit a database password.
+`host.docker.internal` is for this **local** environment only and is not used in Render. Never check the password into Git.
 
-## Build and run with Docker
+### Build and smoke-test with Docker
 
-With Docker Desktop running, execute these commands from the repository's Windows directory in PowerShell. Stop other processes listening on port 8080 first.
+With Docker Desktop running, from the project directory on Windows PowerShell:
 
 ```powershell
 docker build -t sgf-sprint3 .
-docker run --rm -p 8080:8080 -e SPRING_PROFILES_ACTIVE=default sgf-sprint3
+docker run --rm --name sgf-smoke -p 8080:8080 -e SPRING_PROFILES_ACTIVE=default sgf-sprint3
 ```
 
-In another terminal, verify `http://localhost:8080/groups` and `http://localhost:8080/actuator/health`. The default H2 storage inside this throwaway container is ephemeral; production data is stored in managed PostgreSQL.
+Stop any other service listening on 8080 first. Check `http://localhost:8080/groups` and `http://localhost:8080/actuator/health`. Override the Dockerfile's production-profile default with `SPRING_PROFILES_ACTIVE=default` so this **local smoke test** uses H2; its container filesystem is temporary.
 
-## Environment variables and configuration
+On some Windows/Dev Container bind mounts, Docker may not read the Dockerfile directly. An equivalent build in PowerShell is:
 
-| Variable | Purpose | Where supplied |
-|---|---|---|
-| `SPRING_PROFILES_ACTIVE` | Selects default local H2 or `prod` profile | Local shell or Render Blueprint (`prod`) |
-| `SPRING_DATASOURCE_URL` | JDBC URL for direct PostgreSQL connections | Local/operational environment when using PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | PostgreSQL username | Local/operational environment |
-| `SPRING_DATASOURCE_PASSWORD` | PostgreSQL password | Local secret environment, never Git |
-| `DATABASE_URL` | Render-managed PostgreSQL connection string, converted by Docker entrypoint to JDBC properties | Render `fromDatabase` reference in `render.yaml` |
-| `PORT` | HTTP port, defaulting to 8080 when absent | Render runtime or local default |
-| `JAVA_TOOL_OPTIONS` | Memory/GC options for the production JVM | Render Blueprint |
+```powershell
+Get-Content -Raw .\Dockerfile | docker build --progress=plain -f - -t sgf-sprint3 .
+```
 
-The application has `application.properties` for H2 development and `application-prod.properties` for production behavior. Hibernate/JPA maps the persistent objects to SQL tables. Secrets belong in environment variables or Render service configuration, **not** the repository.
+## Environment configuration
 
-## Automated CI/CD
+| Variable | Purpose |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `default` for local H2 or `prod` for production settings (Render sets `prod`) |
+| `SPRING_DATASOURCE_URL` | JDBC URL for a directly configured PostgreSQL database |
+| `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Database credentials, supplied at runtime only |
+| `DATABASE_URL` | Render-managed PostgreSQL connection string provided through `render.yaml`'s `fromDatabase` reference; `docker-entrypoint.sh` converts it into JDBC properties |
+| `PORT` | HTTP port read by `application-prod.properties` (fallback 8080) |
+| `JAVA_TOOL_OPTIONS` | JVM limits/GC settings set by the Render Blueprint |
 
-The GitHub Actions workflow `.github/workflows/ci.yml` runs on pull requests targeting `main` and pushes to `main`:
+The prod profile uses `spring.jpa.hibernate.ddl-auto=update` (appropriate for this coursework prototype, not a production migration solution); H2's console is disabled. The `/actuator/health` endpoint is exposed. All secrets must remain outside tracked source code and documentation.
 
-1. Check out the repository and install Temurin Java 17.
-2. Run Maven build and tests (`verify`) and upload test reports.
-3. If the test job passes, build the Docker image.
-4. Branch protection requires passing checks before merging to `main`.
-5. Render uses `render.yaml` with `autoDeployTrigger: checksPass` and deploys checked commits after GitHub status checks pass. Render builds and starts the Docker service; the entrypoint configures managed PostgreSQL at runtime.
+## Continuous integration and delivery
 
-**Verified successful CI:** [INSERT GITHUB ACTIONS RUN URL]
-**Failed-then-fixed CI example:** [INSERT FAILED RUN URL AND FIXED RUN URL]
-**Observed automatic deployment:** [INSERT DEPLOYED COMMIT SHA AND RENDER EVENT/TIMESTAMP]
+1. Pull requests into `main` trigger `.github/workflows/ci.yml`.
+2. `build-test` sets up Temurin Java 17, runs `bash ./mvnw -B -ntp verify`, and uploads Surefire test reports.
+3. `docker-build` depends on `build-test` and builds the Docker image only after tests succeed.
+4. The `main` branch has a ruleset requiring PRs and the two checks.
+5. `render.yaml` defines one Free Docker web service and one Free PostgreSQL database in Ohio, with `autoDeployTrigger: checksPass`. Render builds/starts the container after the successful merge.
 
-## Release and limitations
+**Actual verification:**
 
-Git tags: [`sprint1`](https://github.com/logan-p466/study-group-finder/tags), `sprint2`, `sprint3`.
-GitHub release: [INSERT ACTUAL v1.0 GITHUB RELEASE URL].
+| Evidence | Link / outcome |
+|---|---|
+| Intentional failed run | [40991230782](https://github.com/logan-p466/study-group-finder/actions/runs/40991230782): `build-test` failed; `docker-build` skipped; merge blocked |
+| Corrective successful run | [40991543560](https://github.com/logan-p466/study-group-finder/actions/runs/40991543560): both jobs passed; [demo PR #3](https://github.com/logan-p466/study-group-finder/pull/3) was closed without merge |
+| Sprint 3 implementation | [PR #2](https://github.com/logan-p466/study-group-finder/pull/2), merge commit `32dc27e` |
+| Successful CI for automatic deploy | [40996253828](https://github.com/logan-p466/study-group-finder/actions/runs/40996253828): 32 tests passed and both jobs succeeded |
+| Automatic production deploy | [PR #4](https://github.com/logan-p466/study-group-finder/pull/4), merged as `1e3cf11`; Render showed trigger **Auto-Deploy**, `Live`, in 2m44s |
 
-Known limitations: matching course search uses exact text; concurrent last-slot joins are not guaranteed to be atomic without additional database locking; the Render Free tier may have cold starts, ephemeral web filesystem storage, and limits on managed PostgreSQL lifetime. The database should remain available throughout the grading period.
+The first Render deployment was a **Blueprint** deployment for `32dc27e` on October 29, 2026, 10:39 PM Eastern. The later `1e3cf11` deployment was triggered automatically by the `main` merge, **not** manually, and changed the public heading to **IU Study Group Finder**.
 
-## Documentation
+## Limitations and release status
 
-- [`docs/design-decisions.md`](docs/design-decisions.md): architecture and trade-off decisions, including PoEAA patterns.
-- [`docs/architecture.md`](docs/architecture.md): layers, entities, routes, security, and deployment components.
-- [`docs/domain-model.md`](docs/domain-model.md): historical Sprint 1 model.
-- [`docs/sprint-review-retrospective.md`](docs/sprint-review-retrospective.md): historical Sprint 1 retrospective.
-- [`docs/sprint3-retrospective.md`](docs/sprint3-retrospective.md): final-sprint review and project retrospective.
+- Search requires an exact course string, and time/location are plain text rather than calendar records.
+- `createdBy` is a server-assigned username string, not a referentially enforced owner foreign key.
+- The membership unique constraint prevents duplicate joins; the capacity check is **not atomic under concurrent last-slot requests**. A stronger locking/transaction strategy is future work.
+- The code still contains legacy Sprint 2 manual login/logout controller methods. Spring Security's filter chain handles the deployed login/logout flow, but removing the obsolete controller methods is useful cleanup.
+- Render Free hosting has possible cold starts, ephemeral web-container storage, and time limits on Free PostgreSQL databases. This is a course demonstration, not a production SLA; preserve the database for the grading period.
+
+**GitHub release status at documentation preparation:** there were **no existing** `sprint1`, `sprint2`, or `sprint3` tags and **no published `v1.0` GitHub Release** when checked. **Before Assignment 4 submission**, create and verify those three historical tags and the `v1.0` release, then update this paragraph with their actual links. No release has been invented here.
+
+## Documents
+
+- [`docs/domain-model.md`](docs/domain-model.md): **current Release 1.0** fields, entities, relationships, and constraints.
+- [`docs/architecture.md`](docs/architecture.md): current security, MVC, persistence, infrastructure, and request flows.
+- [`docs/design-decisions.md`](docs/design-decisions.md): decisions across all three sprints, trade-offs, and observed results.
+- [`docs/sprint-review-retrospective.md`](docs/sprint-review-retrospective.md): historical Sprint 1 retrospective, with an explicit final-state clarification.
+- [`docs/sprint3-retrospective.md`](docs/sprint3-retrospective.md): actual Sprint 3 results, CI evidence, deployment, and final remaining actions.

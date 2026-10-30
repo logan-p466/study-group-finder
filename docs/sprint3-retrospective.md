@@ -1,69 +1,101 @@
-# Sprint 3 Review and Project Retrospective
+# Sprint 3 Review and Retrospective — Study Group Finder
 
-**Course / project:** CSCI-P 466, Study Group Finder, Group 2
-**Sprint:** SGF Sprint 3 (Jira planned dates October 21–27, 2026)
-**Instructor follow-up:** October 22, 2026
-**Release:** v1.0
+**CSCI-P 466 · Group 2 · Project 1**
+**Jira sprint:** SGF Sprint 3, scheduled October 21–27, 2026. Verification and live delivery continued on October 29, 2026; the scheduled sprint end is **not** the actual deployment date.
+**Review clarification:** Professor Bahramian, October 22, 2026.
+**Repository:** https://github.com/logan-p466/study-group-finder
+**Live application:** https://sgf-p466-group2-web.onrender.com/groups
 
-## Delivered release scope and instructor review
+## 1. Sprint objective and agreed deliverable
 
-The final release scope combines the Sprint 1 public group directory and Sprint 2 user-registration/membership increment with administrator moderation (**SGF-37**) and deployment infrastructure (**SGF-30–34**). The October 22 instructor meeting replaced creator-only editing (**SGF-35**, deferred outside Project 1) with a genuine Spring Security ADMIN role. Moderators can view and suspend groups without deleting existing records; suspended groups disappear from public browse/search and cannot be joined.
+Deliver Release 1.0 with a production PostgreSQL database, Docker image, automated GitHub Actions tests and image build, required checks for changes to `main`, and Render hosting with automatic deployment after successful CI. The October 22 professor discussion revised the user-facing scope: implement an `ADMIN` role and the ability to **suspend** study groups without deletion; defer creator-only editing ([SGF-35](https://loganreddell.atlassian.net/browse/SGF-35)). Release 2 and Release 3 ideas remain outside Project 1.
 
-The release uses a PostgreSQL-backed Render web service, a Java 17 Docker image, GitHub Actions tests and image builds, and `autoDeployTrigger: checksPass` for automatic deployment of checked commits. The application uses Spring MVC, Thymeleaf, JPA/Hibernate, and Spring Security.
+## 2. Sprint backlog and outcome
 
-## Sprint estimates and outcomes
+| Jira work item | Estimate | Verified outcome |
+|---|---:|---|
+| [SGF-30](https://loganreddell.atlassian.net/browse/SGF-30): PostgreSQL and health | 3 | Local PostgreSQL tested; managed Render PostgreSQL in use; live `/actuator/health` reported working |
+| [SGF-31](https://loganreddell.atlassian.net/browse/SGF-31): Docker | 3 | Multi-stage Java 17 Dockerfile; local image built/smoke-tested; GitHub CI Docker job passed |
+| [SGF-32](https://loganreddell.atlassian.net/browse/SGF-32): CI and checks | 3 | `build-test` and dependent `docker-build` jobs; branch rules; failed-then-fixed real CI runs recorded |
+| [SGF-33](https://loganreddell.atlassian.net/browse/SGF-33): Render CI/CD | 5 | Initial Blueprint service Live; later merge `1e3cf11` marked Auto-Deploy, 2m44s, with visible updated heading |
+| [SGF-34](https://loganreddell.atlassian.net/browse/SGF-34): regression, docs, release | 2 | 32 green CI tests and release documentation; **historical tags and GitHub `v1.0` Release still to be created at this document's preparation** |
+| [SGF-37](https://loganreddell.atlassian.net/browse/SGF-37): admin suspension | 5 | Live administrator dashboard, suspension status retained, public group hidden, normal user denied with 403; automated security tests passed |
+| [SGF-35](https://loganreddell.atlassian.net/browse/SGF-35): creator editing | deferred | Removed from Sprint 3 scope after professor review; not implemented or claimed done |
 
-| Jira issue | Agreed deliverable | Estimated points |
-|---|---|---:|
-| SGF-30 | PostgreSQL profile and health endpoint | 3 |
-| SGF-31 | Portable Docker image | 3 |
-| SGF-32 | GitHub Actions CI | 3 |
-| SGF-33 | CI-gated Render deployment | 5 |
-| SGF-34 | Regression tests, README, versioned release | 2 |
-| SGF-37 | Administrator-only suspension | 5 |
-| **Total** | | **21** |
+**Total estimated scope: 21 points.** The feature/infrastructure work accounting for **19 points** has verified implementation evidence. The **remaining 2-point documentation/release item** was not fully done until historical tags and `v1.0` release are published. This is not an assertion that Jira has already transitioned those issues: when checked, SGF-30 was still `In Progress`, the others still `To Do`, and SGF-35 deferred outside Sprint 3. Jira status transitions and closure should follow final verification.
 
-Sprint 1 committed 17 points and Sprint 2 planned approximately 16. Sprint 3's 21-point estimate included substantial infrastructure work, so comparing the point totals alone understates the setup and integration risk. **Actual points completed:** [INSERT VERIFIED TOTAL FROM JIRA]. **Deferred:** SGF-35. Other incomplete items, if any: [INSERT OR STATE NONE].
+## 3. Final Release 1.0 demonstrated behavior
 
-## Final demonstration and evidence
+- Anonymous course group listing and exact-course search.
+- Student registration, BCrypt password hashing, form login/logout, group creation and joining, membership count and capacity controls.
+- Server-controlled creator attribution: `createdBy` **remains a `String`** containing the authenticated username; a relationship to `Student` was *not* implemented for group ownership.
+- Group status (`ACTIVE` / `SUSPENDED`), admin listing and moderation, filtering suspended groups from public view, and server-side join restriction.
+- Production `demo-admin` promotion in the **Render PostgreSQL database** followed by a fresh login. The live admin link appeared, and the admin route worked.
+- A disposable group `Sprint 3 Admin Test` appeared on the public list, was shown ACTIVE in the admin dashboard, became SUSPENDED, stayed visible to the admin, and disappeared from public browsing. A regular student received HTTP **403 Forbidden** when attempting the admin page. Screenshots were captured.
+- The web service was restarted and accounts, active groups, and SUSPENDED group state were still present afterward, demonstrating managed PostgreSQL persistence rather than reliance on temporary container storage.
 
-| Evidence | Verified result |
+The direct POST to join a suspended group is covered by `AdminSecurityIntegrationTest`; the supplied production screenshots do **not** independently show a live direct-POST attempt. The claims above distinguish automated coverage from the observed live demo.
+
+## 4. CI evidence and regression tests
+
+**Final verified green CI:** [GitHub Actions run 40996253828](https://github.com/logan-p466/study-group-finder/actions/runs/40996253828) on [PR #4](https://github.com/logan-p466/study-group-finder/pull/4). The Maven Surefire summary reported **32 tests, 0 failures, 0 errors, 0 skipped**, `BUILD SUCCESS`. Both required jobs passed: `build-test` and `docker-build`. The tests include 13 study-group-flow integration tests, 6 administrator/security integration tests, 5 study-group-controller tests, 5 auth-controller tests, 2 repository tests, and 1 application-context test.
+
+**Failure and recovery exercise for Assignment 4:**
+
+1. Created temporary [PR #3](https://github.com/logan-p466/study-group-finder/pull/3) with an intentionally failing JUnit assertion (`assertEquals(1, 2)`).
+2. [Failed run 40991230782](https://github.com/logan-p466/study-group-finder/actions/runs/40991230782): `build-test` failed, `docker-build` skipped because of its dependency, and required checks prevented merge.
+3. Removed the artificial test; [recovery run 40991543560](https://github.com/logan-p466/study-group-finder/actions/runs/40991543560) passed both jobs.
+4. Closed demonstration PR #3 **without merging it**. The deliberately failing code was not added to `main`.
+
+## 5. Real deployment and delivery proof
+
+- Implementation [PR #2](https://github.com/logan-p466/study-group-finder/pull/2) merged to `main` as `32dc27e`.
+- Render Blueprint first reported `Live` for the Docker web service on **October 29, 2026 at 10:39 PM Eastern**. It created `sgf-p466-group2-web` and `sgf-p466-group2-db`, with the managed PostgreSQL database separate from local H2 and Windows PostgreSQL.
+- [PR #4](https://github.com/logan-p466/study-group-finder/pull/4) updated the visible heading to `IU Study Group Finder`; both CI jobs passed; merged as `1e3cf11`.
+- Render's Deploys page explicitly showed **Auto-Deploy** for `1e3cf11` and `Live`, duration **2m44s**; no Manual Deploy was used for this test. The user confirmed the new heading appeared on the live site.
+- Live health and group list endpoints were tested in the browser. The Free service may sleep when idle and has no production uptime guarantee.
+
+## 6. What worked well
+
+- The three-entity JPA/Thymeleaf structure was preserved while the team added a production PostgreSQL profile and authorization, avoiding a risky persistence rewrite.
+- The previously built H2 tests supported regression verification when security roles, CSRF, and an administration endpoint were introduced.
+- Separating the deliberate CI failure onto its own PR prevented the failure from contaminating `main`.
+- CI-required checks and Render auto-deploy were proven with real run and commit evidence, rather than described hypothetically.
+- Non-destructive suspension made a clear live demo: the suspended record remained for administrators and disappeared from the student view.
+
+## 7. Difficulties and what they taught
+
+- **Database confusion:** the app used local Windows PostgreSQL for development and separate Render PostgreSQL in production. Early admin role updates were accidentally made to the local `sgf` database; production did not change until the correct pgAdmin connection was used. A hostname/database verification step is essential before changing live data.
+- **Authentication transition:** replacing ad hoc sessions with Spring Security required CSRF-aware request tests, `@WithMockUser` or `user(...)` processors, and a fresh login after changing a role.
+- **Windows/Dev Container:** Docker struggled to read a bind-mounted Dockerfile until passed via PowerShell stdin; Git had casing (`DockerFile`/`Dockerfile`) and CRLF/trailing-whitespace issues; occasional stale `.git` lock files needed resolution.
+- **GitHub CI:** the first pushed workflow had a YAML indentation issue that produced no jobs; adding a workflow file required an appropriately scoped token; required-check enforcement had to be configured on `main`.
+- **Operational reality:** Render's first deployment had a separate Blueprint provisioning step, and live application validation was necessary to establish that the service and database really worked.
+
+## 8. Course patterns, trade-offs, and process improvement
+
+| PoEAA pattern | How it appeared |
 |---|---|
-| Public application | [INSERT ACTUAL RENDER URL] |
-| Deployment commit | [INSERT ACTUAL `main` COMMIT SHA] |
-| GitHub Actions success | [INSERT ACTUAL WORKFLOW RUN URL] |
-| Failed test/check and subsequent fix | [INSERT BOTH REAL RUN URLS OR DESCRIBE EVIDENCE] |
-| Render automatic deployment | [INSERT EVENT/TIMESTAMP/SCREENSHOT REFERENCE] |
-| Maven automated tests | [INSERT PASSED TEST COUNT AND COMMAND OUTPUT] |
-| Database persistence after restart/redeploy | [INSERT WHAT WAS OBSERVED] |
-| Administrator and student authorization tests | [INSERT VERIFIED TEST RESULTS] |
-| Version tags and release | [INSERT LINKS FOR sprint1, sprint2, sprint3, v1.0] |
+| Domain Model | `Student`, `StudyGroup`, `Membership` |
+| Data Mapper | JPA/Hibernate persisted entities/associations to H2/PostgreSQL |
+| Template View | Thymeleaf displayed the public and admin views |
+| Server Session State | Sprint 2 manual session ID; current runtime uses Spring Security session authentication |
 
-Demo coverage includes anonymous browsing/search; registration and password validation; student sign-in; group creation; joining; duplicate and full-group rejection; administrator sign-in; suspension; access denial to students on `/admin/**`; hidden suspended groups; and rejection of direct joining requests to suspended groups.
+**Trade-offs:** `createdBy` is server-controlled text, not a foreign key; searches are exact; meeting fields are free-form; joining's last-slot capacity check is not locked against races; Hibernate uses `ddl-auto=update` rather than versioned migrations. Creator editing and optional later-release features remain deferred.
 
-## Estimation: what went well and what did not
+For the next project: set up CI and an early Docker build in Sprint 1; verify Postgres and H2 environment isolation; establish documented role/session testing before production; add actual migrations and concurrency protection before supporting high-volume joining; maintain a release evidence checklist alongside the sprint board.
 
-The small Sprint 1 model was straightforward to estimate because group creation and public browsing fit a clear MVC/JPA vertical slice. The second sprint introduced cross-cutting behavior: accounts, password hashes, membership relationships, and validation. Final-sprint infrastructure involved more integration uncertainty than the feature count alone suggested, especially environment-specific configuration, Docker runtime behavior, and CI-to-Render handoff.
+## 9. Final evidence / outstanding bookkeeping
 
-A better future estimate would reserve explicit capacity for infrastructure investigation, deployment verification, and full regressions rather than treating them as overhead attached to feature stories.
+- [x] 32 tests green in GitHub CI, Docker build job passed.
+- [x] Deliberate failing build and successful correction documented with permanent links.
+- [x] Production Docker web service and PostgreSQL available; health and groups URL usable.
+- [x] Production admin access, suspension, hidden group and non-admin 403 verified by supplied screenshots.
+- [x] Persistence after Render web-service restart verified by user.
+- [x] Actual `main` merge triggered an automatic Render deployment.
+- [x] Domain, architectural, design and sprint documentation updated to match actual code.
+- [ ] Create/verify historical Git tags `sprint1`, `sprint2`, `sprint3` and publish `v1.0` GitHub Release. None existed when checked.
+- [ ] Finalize any temporary grader credentials and give the instructor an appropriate access method without exposing private database credentials.
+- [ ] Reconcile Jira issue statuses and Sprint 3 closure with the completed work/release.
+- [ ] Fill and submit Assignment 4's official PDF, citing recorded URLs and screenshots.
 
-## Most useful PoEAA patterns
-
-- **Domain Model:** Student, StudyGroup, and Membership formed a natural representation of the application's rules.
-- **Data Mapper:** Hibernate/JPA mapped the entity graph to H2 and PostgreSQL without database code in the controllers.
-- **Template View:** Thymeleaf provided simple, testable server-rendered pages.
-- **Server Session State:** Spring Security took responsibility for authenticated session management, replacing the earlier manually stored student ID.
-
-## Hardest engineering and automation problems
-
-The local environment combined a Linux IntelliJ Dev Container with Windows PostgreSQL and Docker Desktop, which required correctly distinguishing localhost inside each environment. PostgreSQL datasource variables leaked into H2-based test runs and initially caused application-context errors. The security conversion required adapting MockMvc tests for CSRF and authenticated principals instead of legacy manual session attributes. GitHub Actions and Render required separate validation of build/test checks, database connection settings, and the live release.
-
-**Final deployment-specific difficulty:** [INSERT THE ACTUAL MOST DIFFICULT CI/RENDER PROBLEM AND ITS RESOLUTION].
-
-## Next-project improvements
-
-Establish a clean, repeatable CI build and a container smoke test early in the project. Keep test database configuration isolated from developer production-profile variables. Define the public deployment contract and the evidence needed for acceptance criteria at the beginning of each sprint. Treat release automation and role-based security as substantial work items with regression coverage, not merely configuration changes.
-
-## Remaining limitations
-
-The group capacity limit can race under concurrent final-slot joins without stronger locking. Course search uses exact text. Future Release 2 and Release 3 enhancements remain in the backlog. These are acknowledged scope choices rather than undisclosed omissions.
+**Release 1.0 documentation is the intended content of these files; a published GitHub `v1.0` Release is still a separate action.**
