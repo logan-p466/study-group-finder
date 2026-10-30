@@ -119,5 +119,6 @@ Render Free instances serve this course demonstration and may sleep when idle. O
 - [Domain model](docs/domain-model.md)
 - [Architecture](docs/architecture.md)
 - [Design decisions](docs/design-decisions.md)
+- [Automatic deployment evidence](docs/deployment-evidence.md)
 - [Sprint 1 retrospective](docs/sprint-review-retrospective.md)
 - [Sprint 3 retrospective](docs/sprint3-retrospective.md)
