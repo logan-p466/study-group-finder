@@ -108,3 +108,7 @@ CI failure gating was demonstrated on a **separate throwaway branch**, [PR #3](h
 | Server Session State | Spring Security maintains the authenticated session; Sprint 2's custom session handling was superseded |
 
 The group course search is exact-match, group meetings are plain text, creator attribution is not referentially enforced, simultaneous capacity checks can race without locking, and Render Free plans have cold-start and retention limits. These are documented trade-offs, not implemented future features.
+
+## Release milestone
+
+[GitHub Release v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) was published October 30, 2026 at commit `54783d1`. Annotated tags `sprint1`, `sprint2`, `sprint3`, and `v1.0` preserve the delivered milestones. Sprint 3 is closed with all six committed issues Done. Documentation corrections after publication do not change the released application or move these tags.
