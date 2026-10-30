@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Moderate Study Groups</title></head>
+<body>
+<h1>Administrator: Study Groups</h1>
+
+<p><a th:href="@{/groups}">Public group list</a></p>
+<table border="1">
+  <tr><th>Title</th><th>Course</th><th>Status</th><th>Action</th></tr>
+  <tr th:each="group : ${groups}">
+    <td th:text="${group.title}">Title</td>
+    <td th:text="${group.course}">Course</td>
+    <td th:text="${group.status == null ? 'ACTIVE' : group.status}">ACTIVE</td>
+    <td>
+      <form th:if="${group.status != 'SUSPENDED'}" method="post"
+            th:action="@{/admin/groups/{id}/suspend(id=${group.id})}">
+        <button type="submit">Suspend</button>
+      </form>
+      <span th:if="${group.status == 'SUSPENDED'}">Suspended</span>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

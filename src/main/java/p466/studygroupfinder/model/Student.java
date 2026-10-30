@@ -24,4 +24,7 @@ public class Student {
 
     @Column(nullable = false, length = 255)
     private String passwordHash;
+
+    @Column(length = 20)
+    private String role = "STUDENT";
 }

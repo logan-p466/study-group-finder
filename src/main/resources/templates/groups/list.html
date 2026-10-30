@@ -10,6 +10,12 @@
 <form th:if="${signedIn}" method="post" th:action="@{/logout}">
   <button type="submit">Sign Out</button>
 </form>
+
+<!-- admin manage button if admin -->
+<p th:if="${isAdmin}">
+  <a th:href="@{/admin/groups}">Administrator: Manage Groups</a>
+</p>
+
 <p th:unless="${signedIn}"><a th:href="@{/login}">Sign In</a> | <a th:href="@{/register}">Register</a></p>
 <p th:if="${message}" th:text="${message}"></p>
 <p th:if="${param.loggedOut}">You signed out.</p>

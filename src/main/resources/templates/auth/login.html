@@ -5,6 +5,10 @@
 </head>
 <body>
 <h1>Student Sign In</h1>
+
+<p th:if="${param.error}">Invalid username or password.</p>
+<p th:if="${param.logout}">You signed out.</p>
+
 <p th:if="${param.registered}">Registration complete. Please sign in.</p>
 
 <form method="POST" th:action="@{/login}" th:object="${loginForm}">

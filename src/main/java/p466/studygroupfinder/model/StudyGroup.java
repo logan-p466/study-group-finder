@@ -43,6 +43,10 @@ public class StudyGroup {
 //    @NotBlank(message = "Created by is required") not used anymore due to login
     private String createdBy;
 
+    // status of study group ACTIVE means active group by default, but admins
+    // can change to SUSPENDED
+    private String status = "ACTIVE";
+
     // might change later specific of capacity based on further meetings
     // enforce capacity
     @NotNull(message = "Maximum capacity is required")
