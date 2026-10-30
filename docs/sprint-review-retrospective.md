@@ -43,4 +43,4 @@ Create the Jira sprint, branch, repository skeleton, Dev Container, and an initi
 
 ## End-of-project perspective
 
-Those Sprint 1 capabilities remained in the live [Release 1.0 application](https://sgf-p466-group2-web.onrender.com/groups), now supplemented by registration, membership, security, administrator suspension, and managed PostgreSQL. A final CI run for PR #4 reported **32 tests passing** across all tested components. This postscript is the only Release 1.0 update to the historical Sprint 1 retrospective.
+Those Sprint 1 capabilities remained in the live [Release 1.0 application](https://sgf-p466-group2-web.onrender.com/groups), now supplemented by registration, membership, security, administrator suspension, and managed PostgreSQL. A final CI run for PR #4 reported **32 tests passing** across all tested components. The [GitHub v1.0 release](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) was published October 30, 2026. This postscript is the only Release 1.0 update to the historical Sprint 1 retrospective.

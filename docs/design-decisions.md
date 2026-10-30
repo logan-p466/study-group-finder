@@ -1,6 +1,6 @@
 # Study Group Finder — Design Decisions and Actual Outcomes
 
-**Scope:** Project 1, Sprints 1–3, through the deployed `main` version after the CI-gated Render auto-deployment of PR #4 (merge `1e3cf11`). Decisions are described as **implemented** where verified, not as proposed work. See [`domain-model.md`](domain-model.md) and [`architecture.md`](architecture.md) for the exact current model and topology.
+**Scope:** Project 1, Sprints 1–3, released as [v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) at `54783d1`. The automatic-deployment demonstration used PR #4 (merge `1e3cf11`). Decisions are described as **implemented** where verified, not as proposed work. See [`domain-model.md`](domain-model.md) and [`architecture.md`](architecture.md) for the exact current model and topology.
 
 ## 1. Start with a small vertical slice
 
@@ -31,7 +31,7 @@ Domain tables are `student_account`, `study_group`, and `group_membership`; not 
 
 ## 4. Move from manual sessions to role-based Spring Security
 
-Sprint 2 initially used an `HttpSession` attribute containing a student ID and a manually validated login POST. At the October 22 review, the instructor requested actual Spring Security practice with an administrator role and study group suspension, rather than spending the remaining sprint on creator editing.
+Sprint 2 initially used an `HttpSession` attribute containing a student ID and a manually validated login POST. The Sprint 2 review occurred October 20, 2026. In the October 22 follow-up, the instructor clarified the final feature scope: Spring Security, an administrator role, and study group suspension. Optional creator editing was deferred.
 
 **Implemented:** `spring-boot-starter-security`, `spring-security-test`, `PasswordEncoder`, a repository-backed `UserDetailsService`, and `SecurityFilterChain`. Public paths remain browse/search/registration/login/health. Other paths require authentication; `/admin/**` explicitly requires `ROLE_ADMIN`. Spring Security's form login, logout and CSRF filters are active. Passwords use BCrypt; public registration always assigns `STUDENT`. The production `demo-admin` account received an `ADMIN` role through a controlled **Render database** update followed by fresh login, not through registration or hardcoded credentials.
 
@@ -89,4 +89,6 @@ The [CI workflow](../.github/workflows/ci.yml) has two ordered jobs: `build-test
 
 ## 10. Release and Jira bookkeeping
 
-The sprint scope was 21 estimated points: SGF-30 (3), SGF-31 (3), SGF-32 (3), SGF-33 (5), SGF-34 (2), and SGF-37 (5); SGF-35 was deferred. **Implementation verification and Jira workflow status are separate facts**: the current Jira statuses were still In Progress/To Do when checked, despite the verified deployed functionality. Transition them only when the final evidence and release are complete. Historical tags `sprint1`, `sprint2`, `sprint3` and a `v1.0` GitHub Release had **not** yet been published when this document was prepared; do not fabricate them.
+The completed sprint contains 21 estimated points: SGF-30 (3), SGF-31 (3), SGF-32 (3), SGF-33 (5), SGF-34 (2), and SGF-37 (5). All six issues are Done, and SGF Sprint 3 closed October 30, 2026 at 2:50 AM EDT. SGF-35 remains To Do outside the sprint, explicitly deferred after the October 22 scope clarification. The scheduled sprint ended October 27; verification and release finished October 30, so the original schedule underestimated integration and release work.
+
+Annotated Git tags `sprint1`, `sprint2`, `sprint3`, and `v1.0` exist. The [published GitHub v1.0 release](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) points to `54783d1`, the merge of documentation PR #5. Subsequent documentation corrections preserve those historical tag targets. The unresolved grading handoff is delivery of the existing disposable administrator password and the final Canvas submission; completion of either is not asserted here.
