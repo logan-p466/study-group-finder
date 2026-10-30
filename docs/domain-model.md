@@ -1,98 +1,58 @@
-# Study Group Finder — Current Domain Model (Release 1.0)
+# Study Group Finder — Domain Model
 
-**Released implementation:** [v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0), commit `54783d1`. The persistence layer uses **Spring Data JPA + Hibernate**, not Spring Data JDBC. The three JPA entities are `Student`, `StudyGroup`, and `Membership`.
+Release 1.0 uses Spring Data JPA/Hibernate with three entities: `Student`, `StudyGroup` and `Membership`.
 
-## 1. Entity relationship model
-
-```text
-+-----------------------------+                  +-----------------------------+
-| Student                     |                  | StudyGroup                  |
-| table: student_account      |                  | table: study_group          |
-|-----------------------------|                  |-----------------------------|
-| id: Long (PK)               |                  | id: long (PK)               |
-| username: String (unique)   |                  | course: String              |
-| passwordHash: String        |                  | instructor: String          |
-| role: String                |                  | title: String               |
-+-----------------------------+                  | description: String         |
-            1                                    | createdBy: String           |
-            |                                    | status: String              |
-            |                                    | maxCapacity: int            |
-            | many                               | meetingTime: String         |
-+-----------------------------+                  | location: String            |
-| Membership                  |                  +-----------------------------+
-| table: group_membership     |                             1
-|-----------------------------|                             |
-| id: Long (PK)               |                             | many
-| student: Student (FK)       +-----------------------------+
-| studyGroup: StudyGroup (FK) |
-+-----------------------------+
-
-Unique membership pair: (student_id, study_group_id)
+```mermaid
+erDiagram
+    Student ||--o{ Membership : joins
+    StudyGroup ||--o{ Membership : contains
+    Student {
+        Long id PK
+        String username UK
+        String passwordHash
+        String role
+    }
+    StudyGroup {
+        long id PK
+        String course
+        String instructor
+        String title
+        String description
+        String createdBy
+        String status
+        int maxCapacity
+        String meetingTime
+        String location
+    }
+    Membership {
+        Long id PK
+        Long student_id FK
+        long study_group_id FK
+    }
 ```
 
-**Critical distinction:** `StudyGroup.createdBy` is **not** a JPA relationship or foreign key. It remains a Java `String`, storing a username. The application now populates it from the authenticated student, rather than accepting the form's `createdBy` value. The two JPA `@ManyToOne` relationships are on `Membership`.
+## Entities and constraints
 
-## 2. Student
-
-Source: `src/main/java/p466/studygroupfinder/model/Student.java`.
-
-| Field | Java type | Persistence and meaning |
-|---|---|---|
-| `id` | `Long` | `@Id`, identity-generated primary key |
-| `username` | `String` | Required, unique, at most 40 characters at DB level; normalized to lowercase on registration |
-| `passwordHash` | `String` | Required, length 255; password encoded using BCrypt; never store plaintext |
-| `role` | `String` | Column length 20; field initialized to `STUDENT`, manually provisioned admins use `ADMIN` |
-
-Registration explicitly sets `STUDENT`. The repository looks up accounts with `findByUsername` and checks duplicates with `existsByUsername`. Public registration has no way to request `ADMIN`; the demonstrated `demo-admin` user was promoted through a **production database update**, and a new login loaded the new role.
-
-## 3. StudyGroup
-
-Source: `src/main/java/p466/studygroupfinder/model/StudyGroup.java`.
-
-| Field | Actual Java type | Validation / behavior |
-|---|---|---|
-| `id` | **`long`** | `@Id` and generated with `GenerationType.AUTO` |
-| `course` | `String` | `@NotBlank`; search matches the full course value exactly |
-| `instructor` | `String` | `@NotBlank` |
-| `title` | `String` | `@NotBlank` |
-| `description` | `String` | Optional group details |
-| `createdBy` | **`String`** | Set by `StudyGroupController.createGroup()` from the authenticated username; **not a Student entity relation** |
-| `status` | `String` | Initialized `ACTIVE`; admin may set `SUSPENDED`; old rows with null status are treated as active in public listing |
-| `maxCapacity` | **`int`** | `@Min(2)`, `@Max(100)`; submitted as part of create form |
-| `meetingTime` | `String` | Optional, free-form text; not a date/time entity |
-| `location` | `String` | Optional, free-form text |
-
-### Creation, visibility, and moderation
-
-- Creating a group requires an authenticated account. Validation is checked on the server. The controller sets `createdBy` to `current.getUsername()` and `status` to `ACTIVE`, then persists the row.
-- The public list and exact-course search load matching groups, then omit rows whose status is `SUSPENDED` (case-insensitive comparison). Existing null statuses are not excluded.
-- `GET /admin/groups` lists **all** groups, including suspended. `POST /admin/groups/{id}/suspend` changes an existing group's status to `SUSPENDED` and saves it; the row and prior memberships remain.
-- `POST /groups/{id}/join` rejects a suspended group **at the server**, even when a user sends a direct request without using the UI.
-
-There is **no** group owner foreign key, role-specific owner entity, creator-only edit action, or separate schedule/meeting table in the final implementation. Do not infer any of these from backlog stories.
-
-## 4. Membership
-
-Source: `src/main/java/p466/studygroupfinder/model/Membership.java`.
-
-| Field | Java type | Persistence and meaning |
-|---|---|---|
-| `id` | `Long` | Identity-generated PK |
-| `student` | **`Student`** | `@ManyToOne(fetch = LAZY, optional = false)` via `student_id` (non-null FK) |
-| `studyGroup` | **`StudyGroup`** | `@ManyToOne(fetch = LAZY, optional = false)` via `study_group_id` (non-null FK) |
-
-The table is `group_membership`, with a database **unique constraint** on `(student_id, study_group_id)`.
-
-The join flow rejects anonymous users, nonexistent or suspended groups, duplicate memberships, and a group at maximum capacity. `countByStudyGroup_Id` calculates the membership count; `existsByStudent_IdAndStudyGroup_Id` checks whether the user already joined. The unique pair constraint provides a second safeguard against duplicates. **Capacity is checked in application logic, not through database locking**, so simultaneous last-slot requests remain a known limitation.
-
-## 5. Key modeling decisions and evolution
-
-| Stage | Model and behavior |
+| Entity/table | Fields and rules |
 |---|---|
-| Sprint 1 | Only `StudyGroup`, initially including creator-entered text; local H2 for persistence |
-| Sprint 2 | Added `Student` and `Membership`; usernames/password hashes, unique membership pairs, capacity and account-based creator attribution |
-| Sprint 3 | Added persistent student `role` and group `status`; secured admin suspension; switched deployed authentication to Spring Security and production storage to PostgreSQL |
+| `Student` / `student_account` | Identity-generated `Long id`; required unique `String username` (40 characters); required `String passwordHash` (255); `String role` initialized to `STUDENT` |
+| `StudyGroup` / `study_group` | Generated `long id`; required `String course`, `instructor`, `title`; optional `String description`, `meetingTime`, `location`; server-assigned `String createdBy`; `String status` initialized to `ACTIVE`; `int maxCapacity` from 2 through 100 |
+| `Membership` / `group_membership` | Identity-generated `Long id`; non-null lazy `@ManyToOne Student` through `student_id`; non-null lazy `@ManyToOne StudyGroup` through `study_group_id`; unique pair `(student_id, study_group_id)` |
 
-The **field type** of `StudyGroup.createdBy` did not change from `String` to `Student` in Sprint 2 or Sprint 3. The **trust boundary** changed: it is now server-supplied, not creator-editable. This is an explicit final implementation choice, not unfinished documentation.
+Registration normalizes usernames to lowercase, checks uniqueness, hashes passwords with BCrypt and assigns the `STUDENT` role. Administrators are provisioned separately. Public registration cannot assign an administrator role.
 
-For architecture and deployment details, see [`architecture.md`](architecture.md) and [`design-decisions.md`](design-decisions.md).
+`StudyGroup.createdBy` stores the authenticated username as text. The controller supplies it from the signed-in account, so a submitted form cannot choose another creator. Membership holds the foreign-key associations shown above.
+
+## Group lifecycle and membership
+
+An authenticated user creates an `ACTIVE` group. More than one group can use the same course/instructor. Creation starts with zero memberships; the creator joins through the same join operation as other users. The list displays title, course, instructor, meeting time, location and membership count/capacity. Course search matches the complete value exactly.
+
+Joining checks that the group exists, is active, has space and has no membership for that student. The unique membership pair also enforces duplicate protection in the database. Counts are derived from membership records. The application-level capacity check can race under simultaneous requests for the last slot.
+
+An administrator can set a group to `SUSPENDED`. The group row and existing memberships remain stored. Public browse/search exclude suspended groups, and the server rejects attempts to join them. Administrators can view both active and suspended groups. Legacy rows with null status are treated as active.
+
+## Persistence
+
+Local development uses file-backed H2; tests use isolated in-memory H2; Render uses managed PostgreSQL. Accounts, groups, memberships and suspension status survive a web-service restart because production storage is separate from the container.
+
+See [architecture](architecture.md) for routes and deployment and [design decisions](design-decisions.md) for the design rationale.

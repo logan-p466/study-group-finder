@@ -1,114 +1,49 @@
-# Study Group Finder — Implemented Architecture (Release 1.0)
+# Study Group Finder — Architecture
 
-This describes the application merged into `main` and deployed on Render, including Sprint 3's Spring Security and administrator suspension work. The application is **Spring Boot 3.5.5, Java 17, Spring MVC, Thymeleaf, Spring Data JPA/Hibernate**, and PostgreSQL in production.
+Study Group Finder is a Java 17 / Spring Boot 3.5.5 application. Spring MVC controllers render Thymeleaf HTML; Spring Security manages authentication and authorization; Spring Data JPA/Hibernate persists the domain entities.
 
-## Architecture at a glance
-
-```text
-Browser (public visitor / signed-in student / administrator)
-    |
-    v
-Spring Security FilterChain
-    |  form authentication, CSRF, role restrictions
-    v
-Spring MVC Controllers
-    |-- HomeController                 redirects / to /groups
-    |-- AuthController                 registration and GET login view
-    |-- StudyGroupController           browse/search/create/join
-    |-- AdminController                admin listing and suspension
-    |
-    v
-Spring Data JpaRepository interfaces
-    |-- StudentRepository
-    |-- StudyGroupRepository
-    |-- MembershipRepository
-    |
-    v
-Hibernate / JPA domain entities
-    |-- Student           (student_account)
-    |-- StudyGroup        (study_group)
-    |-- Membership        (group_membership)
-    |
-    v
-H2 file DB (local) / H2 memory DB (tests) / PostgreSQL (Render)
+```mermaid
+flowchart TD
+    B[Browser] --> S[Spring Security]
+    S --> C[Spring MVC controllers]
+    C --> T[Thymeleaf views]
+    T --> B
+    C --> R[Spring Data JPA repositories]
+    R --> D[H2 or PostgreSQL]
 ```
 
-Server-rendered templates are in `src/main/resources/templates/`. The application is not a REST JSON frontend or a separate JavaScript client. `Model` attributes from controllers drive the HTML pages. Repositories generate persistence queries through Spring Data JPA; the app does **not** implement the practicums' Spring Data JDBC repository model.
+## Request handling
 
-## Persistent entities and relationships
+`HomeController` redirects the root to `/groups`. `AuthController` serves registration and the login view. `StudyGroupController` handles browse/search, validated creation and joining. `AdminController` lists and suspends groups. Constructor-injected repositories provide access to `Student`, `StudyGroup` and `Membership`; [the domain model](domain-model.md) describes the tables and constraints.
 
-- `Student` (`student_account`): `Long id`, unique normalized `username`, BCrypt `passwordHash`, role string initialized to `STUDENT`.
-- `StudyGroup` (`study_group`): generated primitive `long id`, `course`, `instructor`, `title`, optional `description`, server-assigned **`createdBy: String`**, `status: String` (`ACTIVE` or `SUSPENDED`), primitive `int maxCapacity`, optional `meetingTime`, `location`.
-- `Membership` (`group_membership`): `Long id`, lazy **`@ManyToOne Student`** and **`@ManyToOne StudyGroup`** with non-null FKs, unique constraint `(student_id, study_group_id)`.
-
-**Creator is not a JPA association.** `createdBy` still contains the creator's username text; the controller sets it using the authenticated user. There is no `@ManyToOne` creator relation in `StudyGroup`. See [`domain-model.md`](domain-model.md) for every field and constraint.
-
-## Implemented web routes
-
-| Method and path | Who can use it | Implementation |
-|---|---|---|
-| `GET /` | Everyone | Redirect to `/groups` |
-| `GET /groups` | Everyone | Browse active groups; optional `?course=...` exact match |
-| `GET /register` | Everyone | Registration form |
-| `POST /register` | Everyone; CSRF required | Validate, normalize username, BCrypt hash, create `STUDENT` |
-| `GET /login` | Everyone | Thymeleaf login view |
-| `POST /login` | Everyone; CSRF required | Spring Security form authentication |
-| `POST /logout` | Authenticated; CSRF required | Spring Security logout |
-| `GET /groups/new` | Signed-in user | Group creation form |
-| `POST /groups` | Signed-in user; CSRF required | Validate, set creator to authenticated username, save ACTIVE group |
-| `POST /groups/{id}/join` | Signed-in user; CSRF required | Check suspension, existing membership and capacity; save membership |
-| `GET /admin/groups` | **ADMIN only** | View all groups and statuses |
-| `POST /admin/groups/{id}/suspend` | **ADMIN only**; CSRF required | Mark group SUSPENDED without deleting it |
-| `GET /actuator/health` | Everyone | Spring Boot Actuator health check |
-
-The current `AuthController` **still contains obsolete Sprint 2 manual POST login/logout methods** in its source file, but the Spring Security authentication and logout filters handle the deployed endpoints. This is cleanup debt; do not describe the manual `studentId` session attribute as the active authorization model.
-
-## Authentication and authorization
-
-`SecurityConfig` provides:
-
-- A `BCryptPasswordEncoder` bean for hashed passwords.
-- A `UserDetailsService` that loads a `Student` by username and builds a Spring Security user with `ROLE_ADMIN` if `student.role` equals `ADMIN`, otherwise `ROLE_STUDENT`.
-- A `SecurityFilterChain`: public listing/registration/login/health; `/admin/**` requires ADMIN; remaining routes require authentication; CSRF remains enabled.
-- Spring Security form login and logout.
-
-`StudyGroupController` reads `SecurityContextHolder` to get the authenticated username and retrieves that `Student` from the database. The public list exposes the administration link when the **persisted student's** role is ADMIN. Production `demo-admin` was registered as STUDENT, promoted by updating the **Render** database, then signed in again; local Windows PostgreSQL is a different database.
-
-Authorization is checked server-side: hiding a Suspend button is not the security boundary. Automated tests verify a student gets 403 at the admin endpoint and cannot execute suspension. Public listing filters suspended groups, and a direct join POST to a suspended group cannot add a membership.
-
-## Runtime profiles and database boundaries
-
-| Context | Persistence/configuration |
+| Route | Access and behavior |
 |---|---|
-| Local default | `spring.datasource.url=jdbc:h2:file:./data/studygroupfinder`; Hibernate `ddl-auto=update` |
-| Automated tests | `jdbc:h2:mem:studygroupfinder-test`; `ddl-auto=create-drop` in test resources |
-| Local production-profile test | Windows PostgreSQL, `sgf`; Dev Container connects using `host.docker.internal` and explicit datasource variables |
-| Render deployment | Managed Render PostgreSQL supplied as `DATABASE_URL`; Docker entrypoint generates JDBC datasource variables; `prod` profile; `PORT` default 8080 |
+| `GET /groups` | Public; active groups and optional exact `course` search |
+| `GET /register`, `POST /register` | Public; validated registration creates a BCrypt-hashed `STUDENT` account, then redirects to login |
+| `GET /login`, `POST /login` | Public; Spring Security form authentication |
+| `POST /logout` | Ends the authenticated session |
+| `GET /groups/new`, `POST /groups` | Authenticated; create an active group with creator supplied by the server |
+| `POST /groups/{id}/join` | Authenticated; rejects suspended groups, duplicates and full groups |
+| `GET /admin/groups` | ADMIN; lists all groups and their status |
+| `POST /admin/groups/{id}/suspend` | ADMIN; preserves the row/memberships and sets `SUSPENDED` |
+| `GET /actuator/health` | Public; health response used by Render |
 
-Production Postgres data is **not** stored in the web container filesystem. The live user/group/status records survived a web-service restart. `ddl-auto=update` is an expedient prototype schema strategy, not versioned migration tooling.
+CSRF protection remains enabled for form POSTs. A repository-backed `UserDetailsService` loads the account and role. `/admin/**` requires `ROLE_ADMIN`; other protected routes require authentication. A student requesting the admin page receives 403; a signed-out visitor is redirected to login. Registration always assigns `STUDENT`.
 
-## Build, CI and deployed service
+## Configuration and storage
 
-- Build: Java 17 Maven wrapper, Spring Boot JAR. `Dockerfile` uses a multi-stage `eclipse-temurin:17-jdk` build and a `17-jre` runtime, then runs `docker-entrypoint.sh`.
-- CI: `.github/workflows/ci.yml` triggers for PRs into `main` and pushes to `main`; `build-test` runs Maven verification; dependent `docker-build` builds the image only if tests pass. Branch protection requires the checks.
-- CD: `render.yaml` defines `sgf-p466-group2-web` (Free Docker web service), `sgf-p466-group2-db` (Free PostgreSQL), Ohio region, `main` branch, health path `/actuator/health`, `autoDeployTrigger: checksPass`.
-- First live deployment: merged [PR #2](https://github.com/logan-p466/study-group-finder/pull/2), commit `32dc27e`, Render **Blueprint** deploy on October 29, 2026.
-- Verified automatic deploy: merged [PR #4](https://github.com/logan-p466/study-group-finder/pull/4), merge commit `1e3cf11`, Render **Auto-Deploy**; CI run [40996253828](https://github.com/logan-p466/study-group-finder/actions/runs/40996253828) passed with **32 tests** and both required jobs.
-- Live site: https://sgf-p466-group2-web.onrender.com/groups (heading: **IU Study Group Finder**).
-
-CI failure gating was demonstrated on a **separate throwaway branch**, [PR #3](https://github.com/logan-p466/study-group-finder/pull/3): [failure](https://github.com/logan-p466/study-group-finder/actions/runs/40991230782) blocked Docker/merge; [fix](https://github.com/logan-p466/study-group-finder/actions/runs/40991543560) passed both jobs; PR closed without merge.
-
-## Enterprise application patterns and known constraints
-
-| Pattern | Actual example |
+| Environment | Database and configuration |
 |---|---|
-| Domain Model | `Student`, `StudyGroup`, `Membership` objects hold the application's domain data |
-| Data Mapper | JPA/Hibernate maps entities and associations to relational tables |
-| Template View | Thymeleaf renders HTML from Spring MVC model attributes |
-| Server Session State | Spring Security maintains the authenticated session; Sprint 2's custom session handling was superseded |
+| Local default | File-backed H2, `jdbc:h2:file:./data/studygroupfinder`, schema update |
+| Automated tests | In-memory H2 from test resources, schema `create-drop` |
+| Production | Render PostgreSQL; `prod` profile; database connection supplied at runtime |
 
-The group course search is exact-match, group meetings are plain text, creator attribution is not referentially enforced, simultaneous capacity checks can race without locking, and Render Free plans have cold-start and retention limits. These are documented trade-offs, not implemented future features.
+`application-prod.properties` reads `PORT` (fallback 8080), disables the H2 console, exposes health/probes and excludes stack traces from error responses. The Docker entrypoint derives the JDBC URL, username and password from Render's `DATABASE_URL`. Secrets stay in Render rather than Git. PostgreSQL preserves records independently of the ephemeral web container.
 
-## Release milestone
+## Build and delivery
 
-[GitHub Release v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0) was published October 30, 2026 at commit `54783d1`. Annotated tags `sprint1`, `sprint2`, `sprint3`, and `v1.0` preserve the delivered milestones. Sprint 3 is closed with all six committed issues Done. Documentation corrections after publication do not change the released application or move these tags.
+The Docker build stage uses `eclipse-temurin:17-jdk` and the Maven wrapper to package the JAR; the runtime stage uses `eclipse-temurin:17-jre`. Runtime configuration is injected through environment variables.
+
+Pull requests to `main` and pushes to `main` trigger GitHub Actions. `build-test` runs Maven verification and uploads Surefire reports; `docker-build` depends on successful tests. Protect Main requires a PR and both checks, and blocks force pushes/deletion. Render waits for checks on the merged commit using `autoDeployTrigger: checksPass`, builds the image, starts the instance and checks `/actuator/health` before routing traffic to it.
+
+The committed Blueprint creates `sgf-p466-group2-web` and `sgf-p466-group2-db`, both Free plan in Ohio, with PostgreSQL 17. See the [README](../README.md) for all environment variables, commands, live demo credentials, CI failure/recovery links and the automatic deployment demonstration.
