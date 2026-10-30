@@ -32,13 +32,13 @@ The site is intentionally a small server-rendered course project. Creator-only e
 
 ## Demo and grading
 
-Use the public group list without logging in. Register a student, sign in, create a group, and join a group. To demonstrate moderation, sign in as `demo-admin`, open `/admin/groups`, suspend a **disposable** group, and verify that it disappears from `/groups`. Check that a normal student's request for `/admin/groups` is refused with HTTP 403. The production admin test group `Sprint 3 Admin Test` was suspended for the course demonstration.
+Use the public group list without logging in. Register a student, sign in, create a group, and join a group. To demonstrate moderation, sign in as `demo-admin`, open `/admin/groups`, suspend a **disposable** group, and verify that it disappears from `/groups`. Check that a normal student's request for `/admin/groups` is refused with HTTP 403. The production admin test group `Sprint 3 Admin Test` is already suspended. Create a new disposable group before repeating the suspension demonstration; this release does not have an unsuspend action.
 
-**Demo credentials for the instructor:** `demo-admin` is a production administrator username. **Before grading, provide a temporary demo-only password directly to the instructor, or fill in a disposable grading credential here only if sharing that password in a public repository is acceptable.** No application password or PostgreSQL secret is included in this repository. A separate grading student account can be created with public registration.
+**Grader access:** `demo-admin` is the verified production administrator username. Its password has not been recorded in the release evidence, so password delivery to the instructor remains unverified. Supply the disposable account password with the Canvas submission before grading. Students can register their own non-admin accounts at `/register`. Database credentials must remain outside the repository.
 
 | Account | Username | Password/availability |
 |---|---|---|
-| Administrator | `demo-admin` | **Action required:** share disposable demo credential with instructor |
+| Administrator | `demo-admin` | Supply the existing disposable password with the Canvas submission; delivery is not yet verified |
 | Student | Register a new non-admin user | Set password during registration; or provide a disposable pre-created grading account |
 
 Administrators are provisioned **after registration** through an explicit database update to the role column; public registration never offers ADMIN. Production and local PostgreSQL databases are separate.
@@ -114,11 +114,11 @@ The prod profile uses `spring.jpa.hibernate.ddl-auto=update` (appropriate for th
 
 ## Continuous integration and delivery
 
-1. Pull requests into `main` trigger `.github/workflows/ci.yml`.
+1. Pull requests into `main` and pushes to `main` trigger `.github/workflows/ci.yml`.
 2. `build-test` sets up Temurin Java 17, runs `bash ./mvnw -B -ntp verify`, and uploads Surefire test reports.
 3. `docker-build` depends on `build-test` and builds the Docker image only after tests succeed.
 4. The `main` branch has a ruleset requiring PRs and the two checks.
-5. `render.yaml` defines one Free Docker web service and one Free PostgreSQL database in Ohio, with `autoDeployTrigger: checksPass`. Render builds/starts the container after the successful merge.
+5. After a merge, the `push` workflow verifies the new `main` commit. `render.yaml` defines one Free Docker web service and one Free PostgreSQL database in Ohio, with `autoDeployTrigger: checksPass`. Render waits for successful checks on the commit, rebuilds the container, and makes it live after the health check passes.
 
 **Actual verification:**
 
@@ -140,7 +140,16 @@ The first Render deployment was a **Blueprint** deployment for `32dc27e` on Octo
 - The code still contains legacy Sprint 2 manual login/logout controller methods. Spring Security's filter chain handles the deployed login/logout flow, but removing the obsolete controller methods is useful cleanup.
 - Render Free hosting has possible cold starts, ephemeral web-container storage, and time limits on Free PostgreSQL databases. This is a course demonstration, not a production SLA; preserve the database for the grading period.
 
-**GitHub release status at documentation preparation:** there were **no existing** `sprint1`, `sprint2`, or `sprint3` tags and **no published `v1.0` GitHub Release** when checked. **Before Assignment 4 submission**, create and verify those three historical tags and the `v1.0` release, then update this paragraph with their actual links. No release has been invented here.
+**Published release:** [Study Group Finder v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0), published October 30, 2026 at 2:41 AM EDT. The release and annotated tags identify the finalized implementation and the documentation merge `54783d1`; this later documentation correction does not move the release tags.
+
+| Tag | Milestone commit | Link |
+|---|---|---|
+| `sprint1` | `6d36273` | [Sprint 1 source](https://github.com/logan-p466/study-group-finder/tree/sprint1) |
+| `sprint2` | `5220e1a` | [Sprint 2 source](https://github.com/logan-p466/study-group-finder/tree/sprint2) |
+| `sprint3` | `54783d1` | [Sprint 3 source](https://github.com/logan-p466/study-group-finder/tree/sprint3) |
+| `v1.0` | `54783d1` | [Release 1.0 source](https://github.com/logan-p466/study-group-finder/tree/v1.0) |
+
+**Jira completion:** SGF-30, SGF-31, SGF-32, SGF-33, SGF-34, and SGF-37 are Done. SGF Sprint 3 closed on October 30, 2026 at 2:50 AM EDT with 21/21 estimated points completed. SGF-35 remains deferred in the product backlog. The Sprint 2 review was October 20; the October 22 follow-up clarified administrator suspension in place of optional creator editing. Instructor credentials and the final Canvas submission are separate handoff requirements.
 
 ## Documents
 
@@ -148,4 +157,4 @@ The first Render deployment was a **Blueprint** deployment for `32dc27e` on Octo
 - [`docs/architecture.md`](docs/architecture.md): current security, MVC, persistence, infrastructure, and request flows.
 - [`docs/design-decisions.md`](docs/design-decisions.md): decisions across all three sprints, trade-offs, and observed results.
 - [`docs/sprint-review-retrospective.md`](docs/sprint-review-retrospective.md): historical Sprint 1 retrospective, with an explicit final-state clarification.
-- [`docs/sprint3-retrospective.md`](docs/sprint3-retrospective.md): actual Sprint 3 results, CI evidence, deployment, and final remaining actions.
+- [`docs/sprint3-retrospective.md`](docs/sprint3-retrospective.md): completed Sprint 3 results, CI evidence, deployment, and grading handoff.
