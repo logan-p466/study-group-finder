@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: sgf-p466-group2-web
+    runtime: docker
+    plan: free
+    region: ohio
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=65 -XX:+UseSerialGC
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sgf-p466-group2-db
+          property: connectionString
+
+databases:
+  - name: sgf-p466-group2-db
+    plan: free
+    region: ohio
+    postgresMajorVersion: '17'

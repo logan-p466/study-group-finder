@@ -23,6 +23,9 @@ import p466.studygroupfinder.data.StudyGroupRepository;
 import p466.studygroupfinder.model.Membership;
 import p466.studygroupfinder.model.Student;
 import p466.studygroupfinder.model.StudyGroup;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 
 @Controller
@@ -45,18 +48,17 @@ public class StudyGroupController {
         this.membershipRepo = membershipRepo;
     }
 
-    // Read the ID stored in the HTTP session at login; never use a browser-submitted user ID.
+    // updated for sprint 3 use spring security
     private Student signedInStudent(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             return null;
         }
-        Object id = session.getAttribute(AuthController.SESSION_STUDENT_ID);
-        if (!(id instanceof Long)) {
-            return null;
-        }
-        return studentRepo.findById((Long) id).orElse(null);
+        return studentRepo.findByUsername(authentication.getName()).orElse(null);
     }
+
 
     // GET /groups calls findAll when no course is supplied
     // and findByCourse when a nonblank exact course is supplied
@@ -70,9 +72,22 @@ public class StudyGroupController {
         } else {
             groups = studyGroupRepo.findAll();
         }
+
+        // newfor sprint 3
+        // if a group is SUSPENDED, do not show
+        groups = groups.stream()
+                .filter(group -> !"SUSPENDED".equalsIgnoreCase(group.getStatus()))
+                .toList();
+
+
         model.addAttribute("groups", groups);
         model.addAttribute("course", course == null ? "" : course);
         Student current = signedInStudent(request);
+
+        // sprint 3 addition
+        model.addAttribute("isAdmin",
+                current != null && "ADMIN".equals(current.getRole()));
+
         Map<Long, Long> memberCounts = new HashMap<>();
         Set<Long> joinedIds = new HashSet<>();
         Set<Long> fullIds = new HashSet<>();
@@ -119,6 +134,9 @@ public class StudyGroupController {
         }
         studyGroup.setId(0);
         studyGroup.setCreatedBy(current.getUsername());
+        // set study group to active on creation, existing could be NULL, but that
+        // is fine, treating NULL as ACTIVE for backwards compatibility
+        studyGroup.setStatus("ACTIVE");
         studyGroupRepo.save(studyGroup);
         return "redirect:/groups";
     }
@@ -136,6 +154,15 @@ public class StudyGroupController {
             redirect.addFlashAttribute("message", "Study group not found.");
             return "redirect:/groups";
         }
+
+        // if group is SUSPENDED, you cannot join
+        // just hiding a button is not suffient, server side check rejects
+        // direct POST requests
+        if ("SUSPENDED".equalsIgnoreCase(group.getStatus())) {
+            redirect.addFlashAttribute("message", "This group is suspended.");
+            return "redirect:/groups";
+        }
+
         if (membershipRepo.existsByStudent_IdAndStudyGroup_Id(student.getId(), id)) {
             redirect.addFlashAttribute("message", "You already joined this group.");
             return "redirect:/groups";

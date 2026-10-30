@@ -20,15 +20,21 @@ public class AuthController {
     public static final String SESSION_STUDENT_ID = "studentId";
     private final StudentRepository studentRepo;
     private final PasswordEncoder passwordEncoder;
+
     public AuthController(StudentRepository studentRepo, PasswordEncoder passwordEncoder) {
         this.studentRepo = studentRepo;
         this.passwordEncoder = passwordEncoder;
     }
+    // create blank registration form stores it under the model attribute registrationForm, and
+    // returns the Thymeleaf view auth/register
     @GetMapping("/register")
     public String showRegisterForm(Model model) {
         model.addAttribute("registrationForm", new RegistrationForm());
         return "auth/register";
     }
+    // register post
+    // save and flush WRITES
+    //
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute("registrationForm") RegistrationForm form,
                            Errors errors) {
@@ -49,6 +55,8 @@ public class AuthController {
         Student student = new Student();
         student.setUsername(username);
         student.setPasswordHash(passwordEncoder.encode(form.getPassword()));
+        // student role
+        student.setRole("STUDENT");
         try {
             studentRepo.saveAndFlush(student);
         } catch (DataIntegrityViolationException duplicate) {
@@ -56,13 +64,18 @@ public class AuthController {
             errors.rejectValue("username", "duplicate", "Username is already registered.");
             return "auth/register";
         }
+        // REDIRECT
         return "redirect:/login?registered";
     }
+    // LOGIN
+    // creates a blank form
     @GetMapping("/login")
     public String showLoginForm(Model model) {
         model.addAttribute("loginForm", new LoginForm());
         return "auth/login";
     }
+    // POST LOGIN
+    //
     @PostMapping("/login")
     public String login(@Valid @ModelAttribute("loginForm") LoginForm form,
                         Errors errors, HttpServletRequest request) {
@@ -72,10 +85,12 @@ public class AuthController {
         String username = form.getUsername().trim().toLowerCase(Locale.ROOT);
         form.setUsername(username);
         Student student = studentRepo.findByUsername(username).orElse(null);
+        // IF INVALID
         if (student == null || !passwordEncoder.matches(form.getPassword(), student.getPasswordHash())) {
             errors.rejectValue("password", "invalid", "Invalid username or password.");
             return "auth/login";
         }
+        // CREATE AN HTTP SESSION
         HttpSession session = request.getSession(false);
         if (session == null) {
             session = request.getSession(true);
