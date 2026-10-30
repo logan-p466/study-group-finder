@@ -1,6 +1,6 @@
 # Study Group Finder — Current Domain Model (Release 1.0)
 
-**As implemented on `main` after PR #4**, rather than the initial Sprint 1-only model. The persistence layer uses **Spring Data JPA + Hibernate**, not Spring Data JDBC. The three JPA entities are `Student`, `StudyGroup`, and `Membership`.
+**Released implementation:** [v1.0](https://github.com/logan-p466/study-group-finder/releases/tag/v1.0), commit `54783d1`. The persistence layer uses **Spring Data JPA + Hibernate**, not Spring Data JDBC. The three JPA entities are `Student`, `StudyGroup`, and `Membership`.
 
 ## 1. Entity relationship model
 
